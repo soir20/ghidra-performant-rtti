@@ -172,7 +172,7 @@ public class RTTIClassRecoverer extends RecoveredClassHelper {
 			}
 
 			//Iterate over constructor/destructor functions
-			List<Function> constructorOrDestructorFunctions =
+			Set<Function> constructorOrDestructorFunctions =
 				recoveredClass.getConstructorOrDestructorFunctions();
 			Iterator<Function> constDestIterator = constructorOrDestructorFunctions.iterator();
 			while (constDestIterator.hasNext()) {
@@ -235,7 +235,9 @@ public class RTTIClassRecoverer extends RecoveredClassHelper {
 			CircularDependencyException {
 
 		Iterator<RecoveredClass> classIterator = recoveredClasses.iterator();
+		int progress = 0;
 		while (classIterator.hasNext()) {
+			monitor.setMessage("figureOutClassDataMembers  Progress: " + (progress++) + "/" + recoveredClasses.size());
 			monitor.checkCancelled();
 			RecoveredClass recoveredClass = classIterator.next();
 

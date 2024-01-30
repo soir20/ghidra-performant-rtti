@@ -22,6 +22,7 @@ import ghidra.app.decompiler.DecompileResults;
 import ghidra.framework.options.ToolOptions;
 import ghidra.framework.plugintool.PluginTool;
 import ghidra.program.model.address.Address;
+import ghidra.program.model.address.AddressOutOfBoundsException;
 import ghidra.program.model.data.DataType;
 import ghidra.program.model.data.ParameterDefinition;
 import ghidra.program.model.listing.Function;
@@ -290,7 +291,11 @@ public class DecompilerScriptUtils {
 	 * @return a new address with the specified offset in the default address space
 	 */
 	public final Address toAddr(long offset) {
-		return program.getAddressFactory().getDefaultAddressSpace().getAddress(offset);
+		try {
+			return program.getAddressFactory().getDefaultAddressSpace().getAddress(offset);
+		} catch (AddressOutOfBoundsException err) {
+			return null;
+		}
 	}
 
 }

@@ -55,6 +55,7 @@
 import java.io.File;
 import java.io.PrintWriter;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -111,7 +112,7 @@ import ghidra.util.exception.CancelledException;
 import ghidra.util.exception.GraphException;
 import ghidra.util.task.TaskMonitor;
 
-public class RecoverClassesFromRTTIScript extends GhidraScript {
+public class RecoverClassesFromRTTIScriptNoFixup extends GhidraScript {
 
 	public static final String RTTI_FOUND_OPTION = "RTTI Found";
 
@@ -140,7 +141,7 @@ public class RecoverClassesFromRTTIScript extends GhidraScript {
 	// recommended to find missing RTTI structure info in older programs and to find any missing 
 	// potential constructor destructor functions because analysis did not make them functions yet. 
 	// They are either undefined bytes or code that is not in a function. 
-	private static final boolean FIXUP_PROGRAM = true;
+	private static final boolean FIXUP_PROGRAM = false;
 
 	// bookmark all constructor/destructor functions figured out by this script
 	private static final boolean BOOKMARK_FOUND_FUNCTIONS = true;
@@ -721,9 +722,9 @@ public class RecoverClassesFromRTTIScript extends GhidraScript {
 	 */
 	private boolean hasConstructorDestructorDiscrepancy(RecoveredClass recoveredClass) {
 
-		List<Function> allClassConstructors =
+		Set<Function> allClassConstructors =
 			recoverClassesFromRTTI.getAllClassConstructors(recoveredClass);
-		List<Function> allClassDestructors =
+		Set<Function> allClassDestructors =
 			recoverClassesFromRTTI.getAllClassDestructors(recoveredClass);
 
 		List<Function> commonFunctions1 = allClassConstructors.stream()
@@ -924,7 +925,7 @@ public class RecoverClassesFromRTTIScript extends GhidraScript {
 	 * @param comment the bookmark comment to add
 	 * @throws CancelledException when script is cancelled
 	 */
-	private void bookmarkFunctionsOnList(List<Function> functions, String comment)
+	private void bookmarkFunctionsOnList(Collection<Function> functions, String comment)
 			throws CancelledException {
 
 		if (functions.size() == 0) {
@@ -1162,7 +1163,7 @@ public class RecoverClassesFromRTTIScript extends GhidraScript {
 		int total = 0;
 		for (RecoveredClass recoveredClass : recoveredClasses) {
 			monitor.checkCancelled();
-			List<Function> constructorList = recoveredClass.getConstructorOrDestructorFunctions();
+			Set<Function> constructorList = recoveredClass.getConstructorOrDestructorFunctions();
 			total += constructorList.size();
 		}
 		return total;
@@ -1180,7 +1181,7 @@ public class RecoverClassesFromRTTIScript extends GhidraScript {
 		int total = 0;
 		for (RecoveredClass recoveredClass : recoveredClasses) {
 			monitor.checkCancelled();
-			List<Function> inlineList = recoveredClass.getInlinedConstructorList();
+			Set<Function> inlineList = recoveredClass.getInlinedConstructorList();
 			total += inlineList.size();
 		}
 		return total;
@@ -1332,7 +1333,7 @@ public class RecoverClassesFromRTTIScript extends GhidraScript {
 
 		// print constructors
 		stringBuffer.append("constructor(s):\r\n");
-		List<Function> constructorList = recoveredClass.getConstructorList();
+		Set<Function> constructorList = recoveredClass.getConstructorList();
 		for (Function constructorFunction : constructorList) {
 			monitor.checkCancelled();
 			stringBuffer.append("\t" + constructorFunction.getName() + " " +
@@ -1341,7 +1342,7 @@ public class RecoverClassesFromRTTIScript extends GhidraScript {
 		stringBuffer.append("\r\n");
 
 		// print inlined constructors
-		List<Function> inlinedConstructorList = recoveredClass.getInlinedConstructorList();
+		Set<Function> inlinedConstructorList = recoveredClass.getInlinedConstructorList();
 		if (inlinedConstructorList.size() > 0) {
 			stringBuffer.append("inlined constructor(s):\r\n");
 			for (Function inlinedConstructorFunction : inlinedConstructorList) {
@@ -1354,7 +1355,7 @@ public class RecoverClassesFromRTTIScript extends GhidraScript {
 
 		// print destructors
 		stringBuffer.append("destructor(s):\r\n");
-		List<Function> destructorList = recoveredClass.getDestructorList();
+		Set<Function> destructorList = recoveredClass.getDestructorList();
 		for (Function destructorFunction : destructorList) {
 			monitor.checkCancelled();
 			stringBuffer.append("\t" + destructorFunction.getName() + " " +
@@ -1363,7 +1364,7 @@ public class RecoverClassesFromRTTIScript extends GhidraScript {
 		stringBuffer.append("\r\n");
 
 		// print inlined destructors
-		List<Function> inlinedDestructorList = recoveredClass.getInlinedDestructorList();
+		Set<Function> inlinedDestructorList = recoveredClass.getInlinedDestructorList();
 		if (inlinedDestructorList.size() > 0) {
 			stringBuffer.append("inlined destructor(s):\r\n");
 			for (Function inlinedDestructorFunction : inlinedDestructorList) {
@@ -1374,7 +1375,7 @@ public class RecoverClassesFromRTTIScript extends GhidraScript {
 		}
 
 		// print const/dest that couldn't be classified correctly
-		List<Function> indeterminateList = recoveredClass.getIndeterminateList();
+		Set<Function> indeterminateList = recoveredClass.getIndeterminateList();
 		if (indeterminateList.size() > 0) {
 			stringBuffer.append("\r\nindeterminate constructor(s) or destructor(s):\r\n");
 			for (Function indeterminateFunction : indeterminateList) {
@@ -1501,7 +1502,7 @@ public class RecoverClassesFromRTTIScript extends GhidraScript {
 
 		// print constructor signature(s)
 		stringBuffer.append("constructor(s):\r\n");
-		List<Function> constructorList = recoveredClass.getConstructorList();
+		Set<Function> constructorList = recoveredClass.getConstructorList();
 		for (Function constructorFunction : constructorList) {
 			monitor.checkCancelled();
 			String functionSignatureString = getFunctionSignatureString(constructorFunction, true);
@@ -1512,7 +1513,7 @@ public class RecoverClassesFromRTTIScript extends GhidraScript {
 
 		// print destructor signature
 		stringBuffer.append("\r\ndestructor(s):\r\n");
-		List<Function> destructorList = recoveredClass.getDestructorList();
+		Set<Function> destructorList = recoveredClass.getDestructorList();
 		for (Function destructorFunction : destructorList) {
 			monitor.checkCancelled();
 			String functionSignatureString = getFunctionSignatureString(destructorFunction, true);
@@ -1521,7 +1522,7 @@ public class RecoverClassesFromRTTIScript extends GhidraScript {
 		}
 
 		// print const/dest that couldn't be classified correctly
-		List<Function> indeterminateList = recoveredClass.getIndeterminateList();
+		Set<Function> indeterminateList = recoveredClass.getIndeterminateList();
 		if (indeterminateList.size() > 0) {
 			stringBuffer.append("\r\nindeterminate constructor or destructor function(s):\r\n");
 			for (Function indeterminateFunction : indeterminateList) {

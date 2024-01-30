@@ -169,25 +169,25 @@ public class RecoveredClassHelper {
 	Map<Function, List<OffsetPcodeOpPair>> functionToLoadPcodeOps =
 		new HashMap<Function, List<OffsetPcodeOpPair>>();
 
-	List<Function> allConstructors = new ArrayList<Function>();
-	List<Function> allDestructors = new ArrayList<Function>();
-	List<Function> allInlinedConstructors = new ArrayList<Function>();
-	List<Function> allInlinedDestructors = new ArrayList<Function>();
-	List<Function> nonClassInlines = new ArrayList<Function>();
+	Set<Function> allConstructors = new HashSet<Function>();
+	Set<Function> allDestructors = new HashSet<Function>();
+	Set<Function> allInlinedConstructors = new HashSet<Function>();
+	Set<Function> allInlinedDestructors = new HashSet<Function>();
+	Set<Function> nonClassInlines = new HashSet<Function>();
 
 	Set<Namespace> badFIDNamespaces = new HashSet<Namespace>();
 	List<Structure> badFIDStructures = new ArrayList<Structure>();
 
-	List<Function> badFIDFunctions = new ArrayList<Function>();
-	List<Function> resolvedFIDFunctions = new ArrayList<Function>();
-	List<Function> fixedFIDFunctions = new ArrayList<Function>();
+	Set<Function> badFIDFunctions = new HashSet<Function>();
+	Set<Function> resolvedFIDFunctions = new HashSet<Function>();
+	Set<Function> fixedFIDFunctions = new HashSet<Function>();
 
-	List<Function> operatorNews = new ArrayList<Function>();
-	List<Function> operatorDeletes = new ArrayList<Function>();
+	Set<Function> operatorNews = new HashSet<Function>();
+	Set<Function> operatorDeletes = new HashSet<Function>();
 	private static Function purecall = null;
 
 	private static Function atexit = null;
-	List<Function> atexitCalledFunctions = new ArrayList<Function>();
+	Set<Function> atexitCalledFunctions = new HashSet<Function>();
 
 	GlobalNamespace globalNamespace;
 	DataTypeManager dataTypeManager;
@@ -593,6 +593,8 @@ public class RecoveredClassHelper {
 		if (vftables.isEmpty()) {
 			return possibleCDs;
 		}
+		
+		Set<Function> allVFunctions = getAllVfunctions(vftables);
 
 		for (Address vftableAddress : vftables) {
 
@@ -608,7 +610,7 @@ public class RecoveredClassHelper {
 				monitor.checkCancelled();
 
 				// possible cd's that are also virtual functions cannot be cds
-				if (getAllVfunctions(vftables).contains(possibleCDFunction)) {
+				if (allVFunctions.contains(possibleCDFunction)) {
 					continue;
 				}
 				possibleCDs.add(possibleCDFunction);
@@ -627,7 +629,7 @@ public class RecoveredClassHelper {
 		allConstructors.remove(function);
 	}
 
-	public List<Function> getAllConstructors() {
+	public Set<Function> getAllConstructors() {
 		return allConstructors;
 	}
 
@@ -639,7 +641,7 @@ public class RecoveredClassHelper {
 		allDestructors.remove(function);
 	}
 
-	public List<Function> getAllDestructors() {
+	public Set<Function> getAllDestructors() {
 		return allDestructors;
 	}
 
@@ -651,7 +653,7 @@ public class RecoveredClassHelper {
 		allInlinedConstructors.remove(function);
 	}
 
-	public List<Function> getAllInlinedConstructors() {
+	public Set<Function> getAllInlinedConstructors() {
 		return allInlinedConstructors;
 	}
 
@@ -663,7 +665,7 @@ public class RecoveredClassHelper {
 		allInlinedDestructors.remove(function);
 	}
 
-	public List<Function> getAllInlinedDestructors() {
+	public Set<Function> getAllInlinedDestructors() {
 		return allInlinedDestructors;
 	}
 
@@ -856,7 +858,7 @@ public class RecoveredClassHelper {
 	 * Get the list of incorrect FID functions
 	 * @return the list of incorrect FID functions
 	 */
-	public List<Function> getBadFIDFunctions() {
+	public Set<Function> getBadFIDFunctions() {
 		return badFIDFunctions;
 	}
 
@@ -865,7 +867,7 @@ public class RecoveredClassHelper {
 	 * be resolved to the correct name.
 	 * @return the list of resolved FID functions
 	 */
-	public List<Function> getResolvedFIDFunctions() {
+	public Set<Function> getResolvedFIDFunctions() {
 		return badFIDFunctions;
 	}
 
@@ -874,7 +876,7 @@ public class RecoveredClassHelper {
 	 * incorrect due to decompiler propagation of bad types from bad FID)
 	 * @return the fixed functions that had incorrect data types due to incorrect FID
 	 */
-	public List<Function> getFixedFIDFunctions() {
+	public Set<Function> getFixedFIDFunctions() {
 		return badFIDFunctions;
 	}
 
@@ -1421,7 +1423,8 @@ public class RecoveredClassHelper {
 	public List<OffsetPcodeOpPair> removePcodeOpsNotInFunction(Function function,
 			List<OffsetPcodeOpPair> pcodeOps) throws CancelledException {
 
-		Iterator<OffsetPcodeOpPair> pcodeOpsIterator = pcodeOps.iterator();
+		Set<OffsetPcodeOpPair> pcodeOpsSet = new HashSet<OffsetPcodeOpPair>(pcodeOps);
+		Iterator<OffsetPcodeOpPair> pcodeOpsIterator = pcodeOpsSet.iterator();
 		while (pcodeOpsIterator.hasNext()) {
 			monitor.checkCancelled();
 			OffsetPcodeOpPair offsetPcodeOpPair = pcodeOpsIterator.next();
@@ -1431,7 +1434,7 @@ public class RecoveredClassHelper {
 				pcodeOpsIterator.remove();
 			}
 		}
-		return pcodeOps;
+		return new ArrayList<OffsetPcodeOpPair>(pcodeOpsSet);
 	}
 
 	/**
@@ -1877,7 +1880,7 @@ public class RecoveredClassHelper {
 	 * @return single function if there is one function on both lists, null if there are none or
 	 * more than one
 	 */
-	public Function getFunctionOnBothLists(List<Function> list1, List<Function> list2) {
+	public Function getFunctionOnBothLists(List<Function> list1, Collection<Function> list2) {
 
 		List<Function> commonFunctions = getFunctionsOnBothLists(list1, list2);
 
@@ -1888,9 +1891,10 @@ public class RecoveredClassHelper {
 		return null;
 	}
 
-	public List<Function> getFunctionsOnBothLists(List<Function> list1, List<Function> list2) {
+	public List<Function> getFunctionsOnBothLists(List<Function> list1, Collection<Function> list2) {
+		Set<Function> set2 = new HashSet<Function>(list2);
 		List<Function> commonFunctions =
-			list1.stream().distinct().filter(list2::contains).collect(Collectors.toList());
+			list1.stream().distinct().filter(set2::contains).collect(Collectors.toList());
 
 		return commonFunctions;
 	}
@@ -1934,12 +1938,12 @@ public class RecoveredClassHelper {
 			new ArrayList<Function>(recoveredClass.getConstructorOrDestructorFunctions());
 		constDestFunctions.removeAll(recoveredClass.getIndeterminateInlineList());
 
-		List<Function> parentConstDestFunctions = parentClass.getConstructorOrDestructorFunctions();
+		Set<Function> parentConstDestFunctions = parentClass.getConstructorOrDestructorFunctions();
 
-		List<Function> parentConstructors = getAllClassConstructors(parentClass);
-		List<Function> parentDestructors = getAllClassDestructors(parentClass);
-		List<Function> childConstructors = getAllClassConstructors(recoveredClass);
-		List<Function> childDestructors = getAllClassDestructors(recoveredClass);
+		Set<Function> parentConstructors = getAllClassConstructors(parentClass);
+		Set<Function> parentDestructors = getAllClassDestructors(parentClass);
+		Set<Function> childConstructors = getAllClassConstructors(recoveredClass);
+		Set<Function> childDestructors = getAllClassDestructors(recoveredClass);
 
 		Iterator<Function> constDestIterator = constDestFunctions.iterator();
 		while (constDestIterator.hasNext()) {
@@ -2032,9 +2036,9 @@ public class RecoveredClassHelper {
 	 * @param recoveredClass the given class
 	 * @return the list of all destructors for the given class
 	 */
-	public List<Function> getAllClassDestructors(RecoveredClass recoveredClass) {
+	public Set<Function> getAllClassDestructors(RecoveredClass recoveredClass) {
 
-		List<Function> allClassDestructors = new ArrayList<Function>();
+		Set<Function> allClassDestructors = new HashSet<Function>();
 		allClassDestructors.addAll(recoveredClass.getDestructorList());
 		allClassDestructors.addAll(recoveredClass.getNonThisDestructors());
 		allClassDestructors.addAll(recoveredClass.getInlinedDestructorList());
@@ -2048,9 +2052,9 @@ public class RecoveredClassHelper {
 	 * @param recoveredClass the given class
 	 * @return the list of all constructors for the given class
 	 */
-	public List<Function> getAllClassConstructors(RecoveredClass recoveredClass) {
+	public Set<Function> getAllClassConstructors(RecoveredClass recoveredClass) {
 
-		List<Function> allClassConstructors = new ArrayList<Function>();
+		Set<Function> allClassConstructors = new HashSet<Function>();
 
 		allClassConstructors.addAll(recoveredClass.getConstructorList());
 		allClassConstructors.addAll(recoveredClass.getInlinedConstructorList());
@@ -2464,7 +2468,7 @@ public class RecoveredClassHelper {
 		while (classIterator.hasNext()) {
 			monitor.checkCancelled();
 			RecoveredClass recoveredClass = classIterator.next();
-			List<Function> constructorList = recoveredClass.getConstructorList();
+			Set<Function> constructorList = recoveredClass.getConstructorList();
 			total += constructorList.size();
 		}
 		return total;
@@ -2527,7 +2531,7 @@ public class RecoveredClassHelper {
 			monitor.checkCancelled();
 			RecoveredClass recoveredClass = classIterator.next();
 
-			List<Function> deletingDestructors = recoveredClass.getDeletingDestructors();
+			Set<Function> deletingDestructors = recoveredClass.getDeletingDestructors();
 			total += deletingDestructors.size();
 		}
 		return total;
@@ -2547,7 +2551,7 @@ public class RecoveredClassHelper {
 		while (classIterator.hasNext()) {
 			monitor.checkCancelled();
 			RecoveredClass recoveredClass = classIterator.next();
-			List<Function> cloneFunctions = recoveredClass.getCloneFunctions();
+			Set<Function> cloneFunctions = recoveredClass.getCloneFunctions();
 			total += cloneFunctions.size();
 		}
 		return total;
@@ -2619,11 +2623,11 @@ public class RecoveredClassHelper {
 			monitor.checkCancelled();
 			RecoveredClass recoveredClass = classIterator.next();
 
-			List<Function> indeterminateConstructorOrDestructorList =
+			Set<Function> indeterminateConstructorOrDestructorList =
 				recoveredClass.getIndeterminateList();
 			remainingIndeterminates.addAll(indeterminateConstructorOrDestructorList);
 
-			List<Function> indeterminateInlines = recoveredClass.getIndeterminateInlineList();
+			Set<Function> indeterminateInlines = recoveredClass.getIndeterminateInlineList();
 			remainingIndeterminates.addAll(indeterminateInlines);
 
 		}
@@ -2680,7 +2684,7 @@ public class RecoveredClassHelper {
 		while (recoveredClassIterator.hasNext()) {
 			monitor.checkCancelled();
 			RecoveredClass recoveredClass = recoveredClassIterator.next();
-			List<Function> indeterminateFunctions = recoveredClass.getIndeterminateList();
+			Set<Function> indeterminateFunctions = recoveredClass.getIndeterminateList();
 			Iterator<Function> functionIterator = indeterminateFunctions.iterator();
 			while (functionIterator.hasNext()) {
 
@@ -3459,7 +3463,7 @@ public class RecoveredClassHelper {
 		Namespace classNamespace = recoveredClass.getClassNamespace();
 		String className = recoveredClass.getName();
 
-		List<Function> constructorList = recoveredClass.getConstructorList();
+		Set<Function> constructorList = recoveredClass.getConstructorList();
 		Iterator<Function> constructorsIterator = constructorList.iterator();
 
 		while (constructorsIterator.hasNext()) {
@@ -3552,7 +3556,7 @@ public class RecoveredClassHelper {
 		Namespace classNamespace = recoveredClass.getClassNamespace();
 		String className = recoveredClass.getName();
 
-		List<Function> destructorList = recoveredClass.getDestructorList();
+		Set<Function> destructorList = recoveredClass.getDestructorList();
 		Iterator<Function> destructorIterator = destructorList.iterator();
 		while (destructorIterator.hasNext()) {
 			monitor.checkCancelled();
@@ -3584,7 +3588,7 @@ public class RecoveredClassHelper {
 		Namespace classNamespace = recoveredClass.getClassNamespace();
 		String className = recoveredClass.getName();
 
-		List<Function> nonThisDestructorList = recoveredClass.getNonThisDestructors();
+		Set<Function> nonThisDestructorList = recoveredClass.getNonThisDestructors();
 		Iterator<Function> destructorIterator = nonThisDestructorList.iterator();
 		while (destructorIterator.hasNext()) {
 			monitor.checkCancelled();
@@ -3955,7 +3959,7 @@ public class RecoveredClassHelper {
 
 		while (callingFunctions != null && !callingFunctions.isEmpty()) {
 			monitor.checkCancelled();
-			List<Function> moreCallingFunctions = new ArrayList<Function>();
+			Set<Function> moreCallingFunctions = new HashSet<Function>();
 			Iterator<Function> callingFunctionsIterator = callingFunctions.iterator();
 			while (callingFunctionsIterator.hasNext()) {
 				monitor.checkCancelled();
@@ -4256,7 +4260,7 @@ public class RecoveredClassHelper {
 
 			RecoveredClass recoveredClass = recoveredClassIterator.next();
 
-			List<Function> constructorList = recoveredClass.getConstructorList();
+			Set<Function> constructorList = recoveredClass.getConstructorList();
 			List<Function> allVirtualFunctions = recoveredClass.getAllVirtualFunctions();
 
 			if (allVirtualFunctions.isEmpty()) {
@@ -4772,8 +4776,8 @@ public class RecoveredClassHelper {
 
 		Namespace classNamespace = recoveredClass.getClassNamespace();
 
-		List<Function> deletingDestructors = recoveredClass.getDeletingDestructors();
-		List<Function> cloneFunctions = recoveredClass.getCloneFunctions();
+		Set<Function> deletingDestructors = recoveredClass.getDeletingDestructors();
+		Set<Function> cloneFunctions = recoveredClass.getCloneFunctions();
 
 		Iterator<Function> vfIterator =
 			recoveredClass.getVirtualFunctions(vftableAddress).iterator();
@@ -5109,7 +5113,7 @@ public class RecoveredClassHelper {
 		Namespace classNamespace = recoveredClass.getClassNamespace();
 		String className = recoveredClass.getName();
 
-		List<Function> inlinedConstructorList = recoveredClass.getInlinedConstructorList();
+		Set<Function> inlinedConstructorList = recoveredClass.getInlinedConstructorList();
 		Iterator<Function> inlinedConstructorsIterator = inlinedConstructorList.iterator();
 
 		while (inlinedConstructorsIterator.hasNext()) {
@@ -5149,7 +5153,7 @@ public class RecoveredClassHelper {
 		Namespace classNamespace = recoveredClass.getClassNamespace();
 		String className = recoveredClass.getName();
 
-		List<Function> inlinedDestructorList = recoveredClass.getInlinedDestructorList();
+		Set<Function> inlinedDestructorList = recoveredClass.getInlinedDestructorList();
 		Iterator<Function> inlinedDestructorIterator = inlinedDestructorList.iterator();
 		while (inlinedDestructorIterator.hasNext()) {
 			monitor.checkCancelled();
@@ -5177,7 +5181,7 @@ public class RecoveredClassHelper {
 
 		Namespace classNamespace = recoveredClass.getClassNamespace();
 
-		List<Function> functionsContainingInlineList = recoveredClass.getIndeterminateInlineList();
+		Set<Function> functionsContainingInlineList = recoveredClass.getIndeterminateInlineList();
 		Iterator<Function> functionsContainingInlineIterator =
 			functionsContainingInlineList.iterator();
 		while (functionsContainingInlineIterator.hasNext()) {
@@ -5211,7 +5215,7 @@ public class RecoveredClassHelper {
 		Namespace classNamespace = recoveredClass.getClassNamespace();
 		String className = recoveredClass.getName();
 
-		List<Function> unknownIfConstructorOrDestructorLIst = recoveredClass.getIndeterminateList();
+		Set<Function> unknownIfConstructorOrDestructorLIst = recoveredClass.getIndeterminateList();
 		Iterator<Function> unknownsIterator = unknownIfConstructorOrDestructorLIst.iterator();
 		while (unknownsIterator.hasNext()) {
 			monitor.checkCancelled();
@@ -5319,7 +5323,7 @@ public class RecoveredClassHelper {
 			monitor.checkCancelled();
 
 			List<Function> virtualFunctions = recoveredClass.getAllVirtualFunctions();
-			List<Function> cdFunctions = recoveredClass.getConstructorOrDestructorFunctions();
+			Set<Function> cdFunctions = recoveredClass.getConstructorOrDestructorFunctions();
 			for (Function cdFunction : cdFunctions) {
 				monitor.checkCancelled();
 
@@ -5633,7 +5637,7 @@ public class RecoveredClassHelper {
 		while (recoveredClassIterator.hasNext()) {
 			monitor.checkCancelled();
 			RecoveredClass recoveredClass = recoveredClassIterator.next();
-			List<Function> indeterminateFunctions = recoveredClass.getIndeterminateList();
+			Set<Function> indeterminateFunctions = recoveredClass.getIndeterminateList();
 			Iterator<Function> indeterminateIterator = indeterminateFunctions.iterator();
 			while (indeterminateIterator.hasNext()) {
 				monitor.checkCancelled();
@@ -5931,7 +5935,7 @@ public class RecoveredClassHelper {
 			monitor.checkCancelled();
 
 			RecoveredClass recoveredClass = recoveredClassIterator.next();
-			List<Function> indeterminateFunctions = recoveredClass.getIndeterminateList();
+			Set<Function> indeterminateFunctions = recoveredClass.getIndeterminateList();
 			Iterator<Function> indeterminateIterator = indeterminateFunctions.iterator();
 			while (indeterminateIterator.hasNext()) {
 				monitor.checkCancelled();
@@ -6004,7 +6008,7 @@ public class RecoveredClassHelper {
 		while (recoveredClassIterator.hasNext()) {
 			monitor.checkCancelled();
 			RecoveredClass recoveredClass = recoveredClassIterator.next();
-			List<Function> constructorList = recoveredClass.getConstructorList();
+			Set<Function> constructorList = recoveredClass.getConstructorList();
 			Iterator<Function> constructorIterator = constructorList.iterator();
 			while (constructorIterator.hasNext()) {
 				monitor.checkCancelled();
@@ -6166,6 +6170,7 @@ public class RecoveredClassHelper {
 
 		Iterator<RecoveredClass> recoveredClassIterator = recoveredClasses.iterator();
 
+		int progress = 0;
 		while (recoveredClassIterator.hasNext()) {
 			monitor.checkCancelled();
 			RecoveredClass recoveredClass = recoveredClassIterator.next();
@@ -6175,6 +6180,7 @@ public class RecoveredClassHelper {
 
 			Iterator<Function> inlineIterator = inlineFunctionsList.iterator();
 			while (inlineIterator.hasNext()) {
+				monitor.setMessage("processInlinedConstructorsAndDestructors  Progress: " + (progress++) + "/" + recoveredClasses.size());
 				monitor.checkCancelled();
 
 				Function inlineFunction = inlineIterator.next();
@@ -6303,7 +6309,6 @@ public class RecoveredClassHelper {
 				}
 
 			}
-
 		}
 	}
 
@@ -6351,13 +6356,15 @@ public class RecoveredClassHelper {
 			DuplicateNameException, CircularDependencyException {
 
 		Iterator<RecoveredClass> classIterator = recoveredClasses.iterator();
+		int progress = 0;
 		while (classIterator.hasNext()) {
 			monitor.checkCancelled();
 			RecoveredClass recoveredClass = classIterator.next();
 
-			List<Function> indeterminateList = recoveredClass.getIndeterminateList();
+			Set<Function> indeterminateList = recoveredClass.getIndeterminateList();
 			Iterator<Function> indeterminateIterator = indeterminateList.iterator();
 			while (indeterminateIterator.hasNext()) {
+				monitor.setMessage("processRemainingIndeterminateConstructorsAndDestructors  Progress: " + (progress++) + "/" + recoveredClasses.size());
 				monitor.checkCancelled();
 				Function indeterminateFunction = indeterminateIterator.next();
 
@@ -6617,7 +6624,7 @@ public class RecoveredClassHelper {
 		// else, if the virtual function CALLS a function on the current class constructor/destructor list
 		// then it is a deleting destructor and we have identified a destructor function for the class
 		else {
-			List<Function> classConstructorOrDestructorFunctions =
+			Set<Function> classConstructorOrDestructorFunctions =
 				recoveredClass.getConstructorOrDestructorFunctions();
 
 			Iterator<Function> functionIterator = classConstructorOrDestructorFunctions.iterator();
@@ -6699,7 +6706,7 @@ public class RecoveredClassHelper {
 			monitor.checkCancelled();
 			RecoveredClass recoveredClass = recoveredClassIterator.next();
 
-			List<Function> indeterminateList = recoveredClass.getIndeterminateList();
+			Set<Function> indeterminateList = recoveredClass.getIndeterminateList();
 			if (indeterminateList.isEmpty()) {
 				continue;
 			}
@@ -6866,7 +6873,7 @@ public class RecoveredClassHelper {
 			monitor.checkCancelled();
 			RecoveredClass recoveredClass = recoveredClassIterator.next();
 
-			List<Function> indeterminateList = recoveredClass.getIndeterminateList();
+			Set<Function> indeterminateList = recoveredClass.getIndeterminateList();
 
 			Iterator<Function> indeterminateIterator = indeterminateList.iterator();
 			while (indeterminateIterator.hasNext()) {
@@ -6878,7 +6885,7 @@ public class RecoveredClassHelper {
 				}
 			}
 
-			List<Function> indeterminateInlineList = recoveredClass.getIndeterminateInlineList();
+			Set<Function> indeterminateInlineList = recoveredClass.getIndeterminateInlineList();
 
 			Iterator<Function> indeterminateInlineIterator = indeterminateInlineList.iterator();
 			while (indeterminateInlineIterator.hasNext()) {
@@ -7037,7 +7044,7 @@ public class RecoveredClassHelper {
 					twoCallCommonFunctions, vftables);
 		}
 
-		operatorDeletes = new ArrayList<Function>(operatorDeletesSet);
+		operatorDeletes = new HashSet<Function>(operatorDeletesSet);
 
 		for (Function operatorDeleteFunction : operatorDeletes) {
 			monitor.checkCancelled();
@@ -7056,7 +7063,7 @@ public class RecoveredClassHelper {
 				findOperatorNewsUsingCalledCommonFunction(allPossibleConstructorDestructors,
 					twoCallCommonFunctions, vftables);
 		}
-		operatorNews = new ArrayList<Function>(operatorNewsSet);
+		operatorNews = new HashSet<Function>(operatorNewsSet);
 
 		for (Function operatorNewFunction : operatorNews) {
 			monitor.checkCancelled();
@@ -7158,7 +7165,7 @@ public class RecoveredClassHelper {
 	 * and in the given map entry set
 	 * @throws CancelledException if cancelled
 	 */
-	private List<Address> getAddressesOfListedFunctionsInMap(List<Function> functions,
+	private List<Address> getAddressesOfListedFunctionsInMap(Set<Function> functions,
 			Map<Address, Function> addressToCalledFunctions) throws CancelledException {
 
 		List<Address> calledFunctionsOnList = new ArrayList<Address>();
@@ -7562,7 +7569,7 @@ public class RecoveredClassHelper {
 			RecoveredClass recoveredClass = recoveredClassIterator.next();
 			if (recoveredClass.hasChildClass()) {
 				Function sameFunction = null;
-				List<Function> deletingDestructors = recoveredClass.getDeletingDestructors();
+				Set<Function> deletingDestructors = recoveredClass.getDeletingDestructors();
 				List<Function> virtualFunctions = recoveredClass.getAllVirtualFunctions();
 				if (virtualFunctions.size() < 3) {
 					continue;
@@ -7672,11 +7679,13 @@ public class RecoveredClassHelper {
 			return;
 		}
 
+		Set<Function> allVFunctions = getAllVfunctions(vftables);
+
 		for (RecoveredClass recoveredClass : recoveredClasses) {
 
 			monitor.checkCancelled();
 
-			List<Function> constructorOrDestructorFunctions =
+			Set<Function> constructorOrDestructorFunctions =
 				recoveredClass.getConstructorOrDestructorFunctions();
 
 			if (constructorOrDestructorFunctions.isEmpty()) {
@@ -7690,7 +7699,7 @@ public class RecoveredClassHelper {
 
 				Function cdFunction = cdFunctionIterator.next();
 
-				if (!getAllVfunctions(vftables).contains(cdFunction)) {
+				if (!allVFunctions.contains(cdFunction)) {
 					continue;
 				}
 

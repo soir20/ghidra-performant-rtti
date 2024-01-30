@@ -47,16 +47,16 @@ public class RecoveredClass {
 	private boolean hasMultipleInheritance = false;
 	private boolean hasMultipleVirtualInheritance = false;
 
-	private List<Function> constructorAndDestructorList = new ArrayList<Function>();
-	private List<Function> constructorList = new ArrayList<Function>();
-	private List<Function> inlinedConstructorList = new ArrayList<Function>();
-	private List<Function> destructorList = new ArrayList<Function>();
-	private List<Function> inlinedDestructorList = new ArrayList<Function>();
-	private List<Function> deletingDestructors = new ArrayList<Function>();
-	private List<Function> nonThisDestructors = new ArrayList<Function>();
-	private List<Function> cloneFunctions = new ArrayList<Function>();
-	private List<Function> indeterminateList = new ArrayList<Function>();
-	private List<Function> indeterminateInlineList = new ArrayList<Function>();
+	private Set<Function> constructorAndDestructorList = new HashSet<Function>();
+	private Set<Function> constructorList = new HashSet<Function>();
+	private Set<Function> inlinedConstructorList = new HashSet<Function>();
+	private Set<Function> destructorList = new HashSet<Function>();
+	private Set<Function> inlinedDestructorList = new HashSet<Function>();
+	private Set<Function> deletingDestructors = new HashSet<Function>();
+	private Set<Function> nonThisDestructors = new HashSet<Function>();
+	private Set<Function> cloneFunctions = new HashSet<Function>();
+	private Set<Function> indeterminateList = new HashSet<Function>();
+	private Set<Function> indeterminateInlineList = new HashSet<Function>();
 
 	private Map<Address, List<Function>> vftableToVfunctionsMap =
 		new HashMap<Address, List<Function>>();
@@ -392,35 +392,35 @@ public class RecoveredClass {
 		return;
 	}
 
-	public List<Function> getConstructorOrDestructorFunctions() {
+	public Set<Function> getConstructorOrDestructorFunctions() {
 		return constructorAndDestructorList;
 	}
 
-	public List<Function> getConstructorList() {
+	public Set<Function> getConstructorList() {
 		return constructorList;
 	}
 
-	public List<Function> getInlinedConstructorList() {
+	public Set<Function> getInlinedConstructorList() {
 		return inlinedConstructorList;
 	}
 
-	public List<Function> getDestructorList() {
+	public Set<Function> getDestructorList() {
 		return destructorList;
 	}
 
-	public List<Function> getInlinedDestructorList() {
+	public Set<Function> getInlinedDestructorList() {
 		return inlinedDestructorList;
 	}
 
-	public List<Function> getNonThisDestructors() {
+	public Set<Function> getNonThisDestructors() {
 		return nonThisDestructors;
 	}
 
-	public List<Function> getIndeterminateList() {
+	public Set<Function> getIndeterminateList() {
 		return indeterminateList;
 	}
 
-	public List<Function> getIndeterminateInlineList() {
+	public Set<Function> getIndeterminateInlineList() {
 		return indeterminateInlineList;
 	}
 
@@ -624,7 +624,7 @@ public class RecoveredClass {
 		}
 	}
 
-	public List<Function> getCloneFunctions() {
+	public Set<Function> getCloneFunctions() {
 		return cloneFunctions;
 	}
 
@@ -634,7 +634,7 @@ public class RecoveredClass {
 		}
 	}
 
-	public List<Function> getDeletingDestructors() {
+	public Set<Function> getDeletingDestructors() {
 		return deletingDestructors;
 	}
 
