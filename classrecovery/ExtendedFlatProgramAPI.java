@@ -1154,7 +1154,9 @@ public class ExtendedFlatProgramAPI extends FlatProgramAPI {
 		// create list with only classes that have templates in name and add completely stripped
 		// template name to class var
 		Iterator<RecoveredClass> recoveredClassesIterator = recoveredClasses.iterator();
+		int progress = 0;
 		while (recoveredClassesIterator.hasNext()) {
+			monitor.setMessage("createShortenedTemplateNamesForClasses (step 1)  Progress: " + (progress++) + "/" + recoveredClasses.size());
 			monitor.checkCancelled();
 			RecoveredClass recoveredClass = recoveredClassesIterator.next();
 
@@ -1174,9 +1176,9 @@ public class ExtendedFlatProgramAPI extends FlatProgramAPI {
 
 		Iterator<RecoveredClass> classWithTemplatesIterator = classesWithTemplates.iterator();
 
-		int progress = 0;
+		progress = 0;
 		while (classWithTemplatesIterator.hasNext()) {
-			monitor.setMessage("Progress: " + (progress++) + "/" + classesWithTemplates.size());
+			monitor.setMessage("createShortenedTemplateNamesForClasses (step 2)  Progress: " + (progress++) + "/" + classesWithTemplates.size());
 			monitor.checkCancelled();
 			RecoveredClass currentClass = classWithTemplatesIterator.next();
 

@@ -6172,6 +6172,7 @@ public class RecoveredClassHelper {
 
 		int progress = 0;
 		while (recoveredClassIterator.hasNext()) {
+			monitor.setMessage("processInlinedConstructorsAndDestructors  Progress: " + (progress++) + "/" + recoveredClasses.size());
 			monitor.checkCancelled();
 			RecoveredClass recoveredClass = recoveredClassIterator.next();
 
@@ -6180,7 +6181,6 @@ public class RecoveredClassHelper {
 
 			Iterator<Function> inlineIterator = inlineFunctionsList.iterator();
 			while (inlineIterator.hasNext()) {
-				monitor.setMessage("processInlinedConstructorsAndDestructors  Progress: " + (progress++) + "/" + recoveredClasses.size());
 				monitor.checkCancelled();
 
 				Function inlineFunction = inlineIterator.next();
@@ -6358,13 +6358,13 @@ public class RecoveredClassHelper {
 		Iterator<RecoveredClass> classIterator = recoveredClasses.iterator();
 		int progress = 0;
 		while (classIterator.hasNext()) {
+			monitor.setMessage("processRemainingIndeterminateConstructorsAndDestructors  Progress: " + (progress++) + "/" + recoveredClasses.size());
 			monitor.checkCancelled();
 			RecoveredClass recoveredClass = classIterator.next();
 
 			Set<Function> indeterminateList = recoveredClass.getIndeterminateList();
 			Iterator<Function> indeterminateIterator = indeterminateList.iterator();
 			while (indeterminateIterator.hasNext()) {
-				monitor.setMessage("processRemainingIndeterminateConstructorsAndDestructors  Progress: " + (progress++) + "/" + recoveredClasses.size());
 				monitor.checkCancelled();
 				Function indeterminateFunction = indeterminateIterator.next();
 

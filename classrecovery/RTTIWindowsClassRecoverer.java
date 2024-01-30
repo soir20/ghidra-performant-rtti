@@ -2187,7 +2187,9 @@ public class RTTIWindowsClassRecoverer extends RTTIClassRecoverer {
 		Iterator<RecoveredClass> recoveredClassIterator = recoveredClasses.iterator();
 
 		// first process all the classes with no parents
+		int progress = 0;
 		while (recoveredClassIterator.hasNext()) {
+			monitor.setMessage("createAndApplyClassStructures (step 1)  Progress: " + (progress++) + "/" + recoveredClasses.size());
 			monitor.checkCancelled();
 
 			RecoveredClass recoveredClass = recoveredClassIterator.next();
@@ -2203,13 +2205,11 @@ public class RTTIWindowsClassRecoverer extends RTTIClassRecoverer {
 			if (!recoveredClass.hasVftable()) {
 				createClassStructureWhenNoParentOrVftable(recoveredClass);
 				listOfClasses.remove(recoveredClass);
-				monitor.setMessage("createAndApplyClassStructures  Progress: " + listOfClasses.size() + "/" + recoveredClasses.size());
 				continue;
 			}
 
 			processDataTypes(recoveredClass);
 			listOfClasses.remove(recoveredClass);
-			monitor.setMessage("createAndApplyClassStructures  Progress: " + listOfClasses.size() + "/" + recoveredClasses.size());
 
 		}
 
@@ -2217,7 +2217,10 @@ public class RTTIWindowsClassRecoverer extends RTTIClassRecoverer {
 		// continue looping until all classes are processed
 		int numLoops = 0;
 
+		progress = 0;
+		int classesToProcess = listOfClasses.size();
 		while (!listOfClasses.isEmpty()) {
+			monitor.setMessage("createAndApplyClassStructures (step 2)  Progress: " + (progress++) + "/" + classesToProcess);
 			monitor.checkCancelled();
 
 			// put in stop gap measure in case some classes never get all
@@ -2243,7 +2246,6 @@ public class RTTIWindowsClassRecoverer extends RTTIClassRecoverer {
 
 				processDataTypes(recoveredClass);
 				listOfClasses.remove(recoveredClass);
-				monitor.setMessage("createAndApplyClassStructures  Progress: " + listOfClasses.size() + "/" + recoveredClasses.size());
 
 			}
 		}
