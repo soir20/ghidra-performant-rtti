@@ -1177,8 +1177,8 @@ public class ExtendedFlatProgramAPI extends FlatProgramAPI {
 		Iterator<RecoveredClass> classWithTemplatesIterator = classesWithTemplates.iterator();
 
 		progress = 0;
+		int total = classesWithTemplates.size();
 		while (classWithTemplatesIterator.hasNext()) {
-			monitor.setMessage("createShortenedTemplateNamesForClasses (step 2)  Progress: " + (progress++) + "/" + classesWithTemplates.size());
 			monitor.checkCancelled();
 			RecoveredClass currentClass = classWithTemplatesIterator.next();
 
@@ -1195,6 +1195,7 @@ public class ExtendedFlatProgramAPI extends FlatProgramAPI {
 				getClassesWithSameShortenedName(classesByShortName, currentShortenedName);
 
 			if (classesWithSameShortenedName.size() == 1) {
+				updateStepTwoProgress(progress++, total);
 				removeClass(currentClass, classesByShortName);
 				continue;
 			}
@@ -1212,6 +1213,7 @@ public class ExtendedFlatProgramAPI extends FlatProgramAPI {
 				if (containsSimpleTemplate(classWithSameShortName.getName())) {
 					setClassShortName(new String(), classWithSameShortName, classesByShortName);
 					classesWithSameShortnameIterator.remove();
+					updateStepTwoProgress(progress++, total);
 					removeClass(classWithSameShortName, classesByShortName);
 				}
 			}
@@ -1227,6 +1229,7 @@ public class ExtendedFlatProgramAPI extends FlatProgramAPI {
 				RecoveredClass classWithSameShortName = classesWithSameShortenedName.iterator().next();
 				String newName = getNewShortenedTemplateName(classWithSameShortName, 1);
 				setClassShortName(newName, classWithSameShortName, classesByShortName);
+				updateStepTwoProgress(progress++, total);
 				removeClass(classWithSameShortName, classesByShortName);
 				continue;
 			}
@@ -1269,6 +1272,7 @@ public class ExtendedFlatProgramAPI extends FlatProgramAPI {
 						getClassesWithSameShortenedName(classesByShortName, shortenedTemplateName);
 
 					if (classesWithSameShortName.size() == 1) {
+						updateStepTwoProgress(progress++, total);
 						removeClass(classesWithSameShortName.iterator().next(), classesByShortName);
 						classesWithSameShortenedName.remove(classesWithSameShortName.iterator().next());
 					}
@@ -1279,6 +1283,10 @@ public class ExtendedFlatProgramAPI extends FlatProgramAPI {
 
 		}
 
+	}
+
+	private void updateStepTwoProgress(int progress, int total) {
+		monitor.setMessage("createShortenedTemplateNamesForClasses (step 2)  Progress: " + progress + "/" + total);
 	}
 
 	private static boolean containsClass(RecoveredClass recoveredClass, Map<String, Set<RecoveredClass>> classesByShortName) {
