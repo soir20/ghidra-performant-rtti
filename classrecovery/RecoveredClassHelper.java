@@ -5929,9 +5929,10 @@ public class RecoveredClassHelper {
 	public void findDestructorsWithNoParamsOrReturn(List<RecoveredClass> recoveredClasses)
 			throws CancelledException {
 
+		int progress = 0;
 		Iterator<RecoveredClass> recoveredClassIterator = recoveredClasses.iterator();
 		while (recoveredClassIterator.hasNext()) {
-
+			monitor.setMessage("findDestructorsWithNoParamsOrReturn  Progress: " + (progress++) + "/" + recoveredClasses.size());
 			monitor.checkCancelled();
 
 			RecoveredClass recoveredClass = recoveredClassIterator.next();
