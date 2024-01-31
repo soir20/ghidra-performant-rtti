@@ -17,6 +17,7 @@
 package classrecovery;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -1150,6 +1151,7 @@ public class ExtendedFlatProgramAPI extends FlatProgramAPI {
 			throws CancelledException {
 
 		Set<RecoveredClass> classesWithTemplates = new HashSet<RecoveredClass>();
+		Map<String, Set<RecoveredClass>> classesByShortName  = new HashMap<String, Set<RecoveredClass>>();
 
 		// create list with only classes that have templates in name and add completely stripped
 		// template name to class var
@@ -1164,7 +1166,7 @@ public class ExtendedFlatProgramAPI extends FlatProgramAPI {
 
 			if (containsTemplate(className)) {
 				String shortenedName = removeTemplate(className) + "<...>";
-				recoveredClass.addShortenedTemplatedName(shortenedName);
+				setClassShortName(shortenedName, recoveredClass, classesByShortName);
 				classesWithTemplates.add(recoveredClass);
 			}
 		}
@@ -1172,8 +1174,6 @@ public class ExtendedFlatProgramAPI extends FlatProgramAPI {
 		// iterate over map and remove entries that already have unique shortened names on map and 
 		// add those unique names to class as shorted name
 		// for those with non-unique names, process them as a group of matched names
-		Set<RecoveredClass> classesToProcess = new HashSet<RecoveredClass>(classesWithTemplates);
-
 		Iterator<RecoveredClass> classWithTemplatesIterator = classesWithTemplates.iterator();
 
 		progress = 0;
@@ -1183,7 +1183,7 @@ public class ExtendedFlatProgramAPI extends FlatProgramAPI {
 			RecoveredClass currentClass = classWithTemplatesIterator.next();
 
 			// skip if already processed
-			if (!classesToProcess.contains(currentClass)) {
+			if (!containsClass(currentClass, classesByShortName)) {
 				continue;
 			}
 
@@ -1192,10 +1192,10 @@ public class ExtendedFlatProgramAPI extends FlatProgramAPI {
 			// if removing the middle of template results in unique name then keep that name and
 			// remove class from list to process
 			Set<RecoveredClass> classesWithSameShortenedName =
-				getClassesWithSameShortenedName(classesToProcess, currentShortenedName);
+				getClassesWithSameShortenedName(classesByShortName, currentShortenedName);
 
 			if (classesWithSameShortenedName.size() == 1) {
-				classesToProcess.remove(currentClass);
+				removeClass(currentClass, classesByShortName);
 				continue;
 			}
 
@@ -1210,9 +1210,9 @@ public class ExtendedFlatProgramAPI extends FlatProgramAPI {
 				// check for a simple internal to the template (ie just one item in it
 				// if that is the case then just keep the original name 
 				if (containsSimpleTemplate(classWithSameShortName.getName())) {
-					classWithSameShortName.addShortenedTemplatedName(new String());
+					setClassShortName(new String(), classWithSameShortName, classesByShortName);
 					classesWithSameShortnameIterator.remove();
-					classesToProcess.remove(classWithSameShortName);
+					removeClass(classWithSameShortName, classesByShortName);
 				}
 			}
 
@@ -1226,8 +1226,8 @@ public class ExtendedFlatProgramAPI extends FlatProgramAPI {
 			if (classesWithSameShortenedName.size() == 1) {
 				RecoveredClass classWithSameShortName = classesWithSameShortenedName.iterator().next();
 				String newName = getNewShortenedTemplateName(classWithSameShortName, 1);
-				classWithSameShortName.addShortenedTemplatedName(newName);
-				classesToProcess.remove(classWithSameShortName);
+				setClassShortName(newName, classWithSameShortName, classesByShortName);
+				removeClass(classWithSameShortName, classesByShortName);
 				continue;
 			}
 
@@ -1246,8 +1246,8 @@ public class ExtendedFlatProgramAPI extends FlatProgramAPI {
 
 					monitor.checkCancelled();
 					RecoveredClass currentClassWithSameShortName = leftoversIterator.next();
-					currentClassWithSameShortName.addShortenedTemplatedName(
-						getNewShortenedTemplateName(currentClassWithSameShortName, commaIndex));
+					String newName = getNewShortenedTemplateName(currentClassWithSameShortName, commaIndex);
+					setClassShortName(newName, currentClassWithSameShortName, classesByShortName);
 				}
 
 				// now iterate and see if any are unique and if so remove from list
@@ -1266,10 +1266,10 @@ public class ExtendedFlatProgramAPI extends FlatProgramAPI {
 						currentClassWithSameShortName.getShortenedTemplateName();
 
 					Set<RecoveredClass> classesWithSameShortName =
-						getClassesWithSameShortenedName(classesToProcess, shortenedTemplateName);
+						getClassesWithSameShortenedName(classesByShortName, shortenedTemplateName);
 
 					if (classesWithSameShortName.size() == 1) {
-						classesToProcess.remove(classesWithSameShortName.iterator().next());
+						removeClass(classesWithSameShortName.iterator().next(), classesByShortName);
 						classesWithSameShortenedName.remove(classesWithSameShortName.iterator().next());
 					}
 				}
@@ -1279,6 +1279,29 @@ public class ExtendedFlatProgramAPI extends FlatProgramAPI {
 
 		}
 
+	}
+
+	private static boolean containsClass(RecoveredClass recoveredClass, Map<String, Set<RecoveredClass>> classesByShortName) {
+		Set<RecoveredClass> classesWithSameName = classesByShortName.get(recoveredClass.getShortenedTemplateName());
+		if (classesWithSameName != null) {
+			return classesWithSameName.contains(recoveredClass);
+		}
+
+		return false;
+	}
+
+	private static void removeClass(RecoveredClass recoveredClass, Map<String, Set<RecoveredClass>> classesByShortName) {
+		Set<RecoveredClass> classesWithSameName = classesByShortName.get(recoveredClass.getShortenedTemplateName());
+		if (classesWithSameName != null) {
+			classesWithSameName.remove(recoveredClass);
+		}
+	}
+
+	private static void setClassShortName(
+		String shortName, RecoveredClass recoveredClass, Map<String, Set<RecoveredClass>> classesByShortName) {
+			removeClass(recoveredClass, classesByShortName);
+			recoveredClass.addShortenedTemplatedName(shortName);
+			classesByShortName.computeIfAbsent(shortName, (key) -> new HashSet<RecoveredClass>()).add(recoveredClass);
 	}
 
 	/**
@@ -1321,20 +1344,14 @@ public class ExtendedFlatProgramAPI extends FlatProgramAPI {
 	}
 
 	public Set<RecoveredClass> getClassesWithSameShortenedName(
-			Set<RecoveredClass> templateClasses, String shortenedName) throws CancelledException {
+			Map<String, Set<RecoveredClass>> templateClasses, String shortenedName) throws CancelledException {
 
-		Set<RecoveredClass> classesWithSameShortenedName = new HashSet<RecoveredClass>();
-
-		Iterator<RecoveredClass> classIterator = templateClasses.iterator();
-		while (classIterator.hasNext()) {
-			monitor.checkCancelled();
-			RecoveredClass currentClass = classIterator.next();
-
-			if (currentClass.getShortenedTemplateName().equals(shortenedName)) {
-				classesWithSameShortenedName.add(currentClass);
-			}
+		Set<RecoveredClass> classesWithSameShortenedName = templateClasses.get(shortenedName);
+		if (classesWithSameShortenedName == null) {
+			return new HashSet<RecoveredClass>();
 		}
-		return classesWithSameShortenedName;
+
+		return new HashSet<RecoveredClass>(classesWithSameShortenedName);
 
 	}
 
