@@ -72,7 +72,7 @@ import ghidra.util.task.TaskMonitor;
 public class RTTIWindowsClassRecoverer extends RTTIClassRecoverer {
 
 	//TODO: make a passed in param
-	private static final boolean USE_SHORT_TEMPLATE_NAMES_IN_STRUCTURE_FIELDS = true;
+	private static final boolean USE_SHORT_TEMPLATE_NAMES_IN_STRUCTURE_FIELDS = false;
 
 	private static final String RTTI_BASE_CLASS_ARRAY_LABEL = "RTTI_Base_Class_Array";
 	private static final String RTTI_CLASS_HIERARCHY_DESCRIPTOR_LABEL =

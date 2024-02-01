@@ -160,7 +160,7 @@ public class RecoverClassesFromRTTIScriptNoFixup extends GhidraScript {
 	private static final String NON_VIRTUAL_INHERITANCE = "Non-virtual Inheritance";
 
 	// show shortened class template names in class structure field names
-	private static final boolean USE_SHORT_TEMPLATE_NAMES_IN_STRUCTURE_FIELDS = true;
+	private static final boolean USE_SHORT_TEMPLATE_NAMES_IN_STRUCTURE_FIELDS = false;
 
 	private static final String CLASS_DATA_STRUCT_NAME = "_data";
 
